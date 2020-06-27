@@ -10,17 +10,25 @@ from tornado.web import StaticFileHandler
 from datetime import datetime, timedelta
 from czsc import KlineAnalyze
 from gm.api import *
+from utils.logger import Logger
 
-from conf import gm_token
+log = Logger('all.log',level='debug').logger
+
+
+
+
+
+#from conf import gm_token
 
 # 在这里设置你的掘金 token，要在本地启动掘金终端，才能正常获取数据
 # set_token("set your gm token")
-set_token(gm_token)
+set_token("03210e0e39013a46836b3afb9d25b57b871df5a2")
 
+#logger = Logger(__name__).get_log()
 
 def get_gm_kline(symbol, end_date, freq='D', k_count=3000):
     """从掘金获取历史K线数据"""
-    print("start")
+
     if "-" not in end_date and isinstance(end_date, str):
         end_date = datetime.strptime(end_date, "%Y%m%d")
     freq_convert = {"60s": "1min", "300s": "5min", "1800s": "30min", "3600s": "60min", "1d": "D"}
@@ -29,9 +37,11 @@ def get_gm_kline(symbol, end_date, freq='D', k_count=3000):
         freq = freq_convert[freq]
         if freq.endswith('min'):
             end_date += timedelta(days=1)
+    
     df = history_n(symbol=symbol, frequency=freq, end_time=end_date,
                    fields='symbol,eob,open,close,high,low,volume',
                    count=k_count, df=True)
+    log.debug(df)
     df['dt'] = df['eob']
     df['vol'] = df['volume']
     df = df[['symbol', 'dt', 'open', 'close', 'high', 'low', 'vol']]
@@ -40,7 +50,7 @@ def get_gm_kline(symbol, end_date, freq='D', k_count=3000):
     df.reset_index(drop=True, inplace=True)
 
     for col in ['open', 'close', 'high', 'low']:
-        df[col] = df[col].apply(round, args=(2,))
+        df[col] = df[col].apply(round, args=(2,))    
     return df
 
 
@@ -82,6 +92,7 @@ class KlineHandler(BaseHandler):
         trade_date = self.get_argument('trade_date')
         if trade_date == 'null':
             trade_date = datetime.now().date().__str__().replace("-", "")
+        log.debug(ts_code,freq,trade_date)
         kline = get_gm_kline(symbol=ts_code, end_date=trade_date, freq=freq, k_count=3000)
         ka = KlineAnalyze(kline)
         kline = pd.DataFrame(ka.kline)
@@ -92,6 +103,12 @@ class KlineHandler(BaseHandler):
 
 
 if __name__ == '__main__':
+
+    log.debug('start')
+
+    pd.set_option('display.max_columns', None)    # 显示所有列
+    pd.set_option('display.max_rows', None)      # 显示所有行
+
     parse_command_line()
     app = Application([
             ('/kline', KlineHandler),
