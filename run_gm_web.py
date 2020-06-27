@@ -20,6 +20,7 @@ set_token(gm_token)
 
 def get_gm_kline(symbol, end_date, freq='D', k_count=3000):
     """从掘金获取历史K线数据"""
+    print("start")
     if "-" not in end_date and isinstance(end_date, str):
         end_date = datetime.strptime(end_date, "%Y%m%d")
     freq_convert = {"60s": "1min", "300s": "5min", "1800s": "30min", "3600s": "60min", "1d": "D"}
