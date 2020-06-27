@@ -32,7 +32,9 @@ def get_gm_kline(symbol, end_date, freq='D', k_count=3000):
     if "-" not in end_date and isinstance(end_date, str):
         end_date = datetime.strptime(end_date, "%Y%m%d")
     freq_convert = {"60s": "1min", "300s": "5min", "1800s": "30min", "3600s": "60min", "1d": "D"}
-    freq_convert = {v: k for k, v in freq_convert.items()}
+    log.debug(freq_convert)
+    freq_convert = {v: k for k, v in freq_convert.items()} #{'1min': '60s', '5min': '300s', '30min': '1800s', '60min': '3600s', 'D': '1d'}
+    log.debug(freq_convert)
     if freq[-1] in ['n', 'D']:
         freq = freq_convert[freq]
         if freq.endswith('min'):
@@ -41,16 +43,19 @@ def get_gm_kline(symbol, end_date, freq='D', k_count=3000):
     df = history_n(symbol=symbol, frequency=freq, end_time=end_date,
                    fields='symbol,eob,open,close,high,low,volume',
                    count=k_count, df=True)
-    log.debug(df)
+    
     df['dt'] = df['eob']
     df['vol'] = df['volume']
-    df = df[['symbol', 'dt', 'open', 'close', 'high', 'low', 'vol']]
+
+    df = df[['symbol', 'dt', 'open', 'close', 'high', 'low', 'vol']] #调整列的顺序
+    
     df.sort_values('dt', inplace=True, ascending=True)
     df['dt'] = df.dt.apply(lambda x: x.strftime(r"%Y-%m-%d %H:%M:%S"))
     df.reset_index(drop=True, inplace=True)
-
     for col in ['open', 'close', 'high', 'low']:
-        df[col] = df[col].apply(round, args=(2,))    
+        df[col] = df[col].apply(round, args=(2,))  
+
+    log.debug(df)  
     return df
 
 
@@ -92,8 +97,10 @@ class KlineHandler(BaseHandler):
         trade_date = self.get_argument('trade_date')
         if trade_date == 'null':
             trade_date = datetime.now().date().__str__().replace("-", "")
-        log.debug(ts_code,freq,trade_date)
-        kline = get_gm_kline(symbol=ts_code, end_date=trade_date, freq=freq, k_count=3000)
+        log.debug(ts_code)
+        log.debug(freq)
+        log.debug(trade_date)
+        kline = get_gm_kline(symbol=ts_code, end_date=trade_date, freq=freq, k_count=300)
         ka = KlineAnalyze(kline)
         kline = pd.DataFrame(ka.kline)
         kline = kline.fillna("")
