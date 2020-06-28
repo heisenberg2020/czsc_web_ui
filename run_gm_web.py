@@ -100,7 +100,7 @@ class KlineHandler(BaseHandler):
         log.debug(ts_code)
         log.debug(freq)
         log.debug(trade_date)
-        kline = get_gm_kline(symbol=ts_code, end_date=trade_date, freq=freq, k_count=300)
+        kline = get_gm_kline(symbol=ts_code, end_date=trade_date, freq=freq, k_count=1440)
         ka = KlineAnalyze(kline)
         kline = pd.DataFrame(ka.kline)
         kline = kline.fillna("")
